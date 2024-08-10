@@ -3,6 +3,7 @@
 
   let list = [];
   let count = 1;
+  let diskon = 0;
   let meta = "";
   let dumpData = "";
 
@@ -25,11 +26,12 @@
   const clear = () => {
     list = [];
     count = 1;
+    diskon = 0;
   };
 
   const generateMeta = (list) => {
     meta =
-      `- Total: Rp. ${total}\n- Orang: ${count}\n- Per Orang: Rp. ${count > 0 ? total / count : 0}\n\n` +
+      `- Total: Rp. ${total}\n- Orang: ${count}\n- Per Orang: Rp. ${count > 0 ? (total - diskon) / count : 0}\n- Diskon: Rp. ${diskon}\n\n` +
       list.reduce((acc, item) => {
         return item.qty && item.harga
           ? `${acc}- ${item.name || "no name"} : ${item.qty} x ${item.harga} = ${item.qty * item.harga}\n`
@@ -55,6 +57,9 @@
         if (parts[0].trim() === "- Orang") {
           return ["count", parseInt(parts[1].trim())];
         }
+        if (parts[0].trim() === "- Diskon") {
+          return ["diskon", parseInt(parts[1].trim().slice(4))];
+        }
       })
       .reduce((acc, item) => {
         if (item) {
@@ -65,22 +70,26 @@
     if (metas.count) {
       count = metas.count;
     }
+    if (metas.diskon) {
+      diskon = metas.diskon;
+    }
 
     if (!data[1]) {
       return;
     }
     const items = data[1].split("\n").map((item, i) => {
-      if (!item.match(/- \w+ \| \d+ x \d+ = \d+/g)) {
+      if (!item.match(/- [\w ]+ : \d+ x \d+ = \d+/g)) {
         return null;
       }
-      const [name, part2] = item.split("|");
+      const [name, part2] = item.split(":");
       return {
         id: i,
         name: name.trim().split("-")[1].trim(),
         qty: parseInt(part2.split("x")[0].trim()),
-        harga: parseInt(part2.split("x")[1].split("=")[1].trim()),
+        harga: parseInt(part2.split("x")[1].split("=")[0].trim()),
       };
     });
+    console.log(items);
     list = items.filter((item) => item);
   };
 
@@ -93,8 +102,20 @@
 <textarea class="w-0 h-0 absolute" bind:value={meta}></textarea>
 <main class="bg-slate-900 min-h-screen flex flex-col items-center gap-2 p-4">
   <h1 class="text-center text-white font-bold text-2xl">Budgeter</h1>
-  <section class="w-full md:w-2/3 bg-white px-4 py-2 rounded-lg flex flex-col gap-2">
+  <section
+    class="w-full md:w-2/3 bg-white px-4 py-2 rounded-lg flex flex-col gap-2"
+  >
     <h2><span class="font-semibold text-lg">Total: </span>Rp. {total}</h2>
+    <div class="w-full">
+      <label for="diskon"><span class="font-semibold text-lg">Diskon: </span>Rp. </label>
+      <input
+        type="number"
+        id="diskon"
+        bind:value={diskon}
+        class="px-3 py-1 rounded-md border-2 border-slate-400 w-full md:w-auto"
+        placeholder="Diskon"
+      />
+    </div>
     <div class="w-full">
       <label for="count" class="font-semibold text-lg">Jumlah Orang: </label>
       <input
@@ -107,7 +128,7 @@
     </div>
     <h2>
       <span class="font-semibold text-lg">Per Orang: </span>Rp. {count > 0
-        ? total / count
+        ? (total - diskon) / count
         : 0}
     </h2>
     <button
