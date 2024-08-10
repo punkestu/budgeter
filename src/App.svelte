@@ -24,6 +24,7 @@
 
   const clear = () => {
     list = [];
+    count = 1;
   };
 
   const generateMeta = (list) => {
